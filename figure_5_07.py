@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -29,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -111,9 +107,7 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Promotion bias sensitivity analysis
-# ---------------------------------
 bias_values = [0.00, 0.10, 0.20, 0.30]
 results = {}
 
@@ -132,9 +126,7 @@ for bias in bias_values:
         kappa=0.002
     )
 
-# ---------------------------------
 # Plot Figure 5.7
-# ---------------------------------
 fig, ax = plt.subplots()
 
 for bias, df in results.items():
