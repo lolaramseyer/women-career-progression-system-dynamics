@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -24,9 +22,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -98,18 +94,14 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Interaction matrix settings
-# ---------------------------------
 alpha_values = [0.1, 0.3, 0.6, 0.9]
 bias_values = [0.0, 0.1, 0.2, 0.3]
 
 alpha_labels = ["0.1", "0.3", "0.6", "0.9"]
 bias_labels = ["0%", "10%", "20%", "30%"]
 
-# ---------------------------------
 # Build heatmap matrix
-# ---------------------------------
 heatmap_data = np.zeros((len(bias_values), len(alpha_values)))
 
 for i, bias in enumerate(bias_values):
@@ -123,9 +115,7 @@ for i, bias in enumerate(bias_values):
         )
         heatmap_data[i, j] = df["Leadership_share"].iloc[-1]
 
-# ---------------------------------
 # Plot heatmap
-# ---------------------------------
 fig, ax = plt.subplots(figsize=(8.5, 6))
 im = ax.imshow(heatmap_data, cmap="Blues", aspect="auto")
 
@@ -156,9 +146,7 @@ cbar.set_label("Leadership share at year 30 (%)")
 plt.tight_layout()
 plt.show()
 
-# ---------------------------------
 # Print table of values
-# ---------------------------------
 interaction_table = pd.DataFrame(
     heatmap_data,
     index=[f"Bias {b}" for b in bias_labels],
