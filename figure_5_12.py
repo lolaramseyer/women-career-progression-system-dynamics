@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 28 13:11:36 2026
-
 @author: lolaramseyer
-"""
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
+
 Figure 5.12: Leadership representation at year 30 under intervention scenarios
 """
 
@@ -17,9 +10,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
+
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -34,9 +26,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -118,9 +108,7 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Intervention scenarios
-# ---------------------------------
 scenarios = [
     {"label": "Baseline", "alpha": 0.3, "bias": 0.15},
     {"label": "Mentorship only", "alpha": 0.6, "bias": 0.15},
@@ -142,9 +130,7 @@ for scenario in scenarios:
     labels.append(scenario["label"])
     leadership_share_year30.append(df["Leadership_share"].iloc[-1])
 
-# ---------------------------------
 # Plot Figure 5.12
-# ---------------------------------
 fig, ax = plt.subplots(figsize=(9, 5.5))
 
 bars = ax.bar(labels, leadership_share_year30)
@@ -168,9 +154,7 @@ plt.tight_layout()
 plt.savefig("figure_5_12_intervention_bar_chart.png", bbox_inches="tight")
 plt.show()
 
-# ---------------------------------
 # Print exact values
-# ---------------------------------
 results = pd.DataFrame({
     "Scenario": labels,
     "Leadership representation at year 30 (%)": leadership_share_year30
