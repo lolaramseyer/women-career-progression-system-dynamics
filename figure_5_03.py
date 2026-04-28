@@ -10,9 +10,7 @@ figure 5.3 workforce distribution by level over time (Junior, Mid, Senior, Leade
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -----------------------------
 # Global plotting style
-# -----------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -26,25 +24,18 @@ plt.rcParams.update({
     "axes.spines.right": False
 })
 
-# -----------------------------
 # Time settings
-# -----------------------------
 T = 30
 dt = 1.0
 time = np.arange(0, T + dt, dt)
 
-# -----------------------------
-# Example baseline workforce stocks
-# Replace these with your actual model outputs if needed
-# -----------------------------
+# Example baseline workforce stocks, Replace these with your actual model outputs if needed
 junior = 2000 + 40*time - 1.2*(time**2)
 mid = 800 + 22*time - 0.4*(time**2)
 senior = 250 + 10*time + 0.12*(time**2)
 leadership = 80 + 3*time + 0.05*(time**2)
 
-# -----------------------------
 # Plot: Figure 5.3
-# -----------------------------
 fig, ax = plt.subplots()
 
 ax.plot(time, junior, linewidth=2.5, label="Junior")
