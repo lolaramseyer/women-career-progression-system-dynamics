@@ -9,8 +9,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-# Plot styling
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -25,7 +23,6 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# Core simulation model
 def simulate(
     T=30,
     dt=1.0,
@@ -34,74 +31,75 @@ def simulate(
     S0=250,
     L0=80,
     entry_per_year=300,
-    pJM=0.12,
-    pMS=0.10,
-    pSL=0.08,
+    pJM=0.10,
+    pMS=0.045,
+    pSL=0.020,
     aJ=0.08,
     aM=0.06,
     aS=0.05,
     aL=0.04,
-    alpha=0.3,
+    alpha=0.1,
+    mentor_scale=3000,
     bias_JM=0.15,
-    bias_MS=0.15,
-    bias_SL=0.15,
-    kappa=0.002
+    bias_MS=0.25,
+    bias_SL=0.35,
+    use_stagnation=True,
+    gamma=0.4,
+    cap_effective_promo=True
 ):
-    n_steps = int(T / dt) + 1
-    time = np.arange(0, T + dt, dt)
+    steps = int(T / dt)
+    years = np.arange(0, T + dt, dt)
 
-    J = np.zeros(n_steps)
-    M = np.zeros(n_steps)
-    S = np.zeros(n_steps)
-    L = np.zeros(n_steps)
-    mentorship = np.zeros(n_steps)
+    J = np.zeros(steps + 1)
+    M = np.zeros(steps + 1)
+    S = np.zeros(steps + 1)
+    L = np.zeros(steps + 1)
 
     J[0], M[0], S[0], L[0] = J0, M0, S0, L0
 
-    for t in range(1, n_steps):
-        mentorship[t-1] = alpha * (1 - np.exp(-kappa * (S[t-1] + L[t-1])))
+    for t in range(steps):
+        mentorship = 1.0 - np.exp(-(S[t] + L[t]) / mentor_scale)
+        mentorship = np.clip(mentorship, 0.0, 1.0)
 
-        eff_pJM = pJM * (1 - bias_JM) * (1 + mentorship[t-1])
-        eff_pMS = pMS * (1 - bias_MS) * (1 + mentorship[t-1])
-        eff_pSL = pSL * (1 - bias_SL) * (1 + mentorship[t-1])
+        f_mentorship = 1.0 + alpha * mentorship
 
-        eff_pJM = min(eff_pJM, 1.0)
-        eff_pMS = min(eff_pMS, 1.0)
-        eff_pSL = min(eff_pSL, 1.0)
+        if use_stagnation:
+            g_stagnation = 1.0 + gamma * (1.0 - mentorship)
+        else:
+            g_stagnation = 1.0
 
-        entry = entry_per_year * dt
+        eff_pJM = pJM * f_mentorship * (1 - bias_JM)
+        eff_pMS = pMS * f_mentorship * (1 - bias_MS)
+        eff_pSL = pSL * f_mentorship * (1 - bias_SL)
 
-        prom_JM = eff_pJM * J[t-1] * dt
-        prom_MS = eff_pMS * M[t-1] * dt
-        prom_SL = eff_pSL * S[t-1] * dt
+        if cap_effective_promo:
+            eff_pJM = np.clip(eff_pJM, 0.0, 1.0)
+            eff_pMS = np.clip(eff_pMS, 0.0, 1.0)
+            eff_pSL = np.clip(eff_pSL, 0.0, 1.0)
 
-        attr_J = aJ * J[t-1] * dt
-        attr_M = aM * M[t-1] * dt
-        attr_S = aS * S[t-1] * dt
-        attr_L = aL * L[t-1] * dt
+        prom_JM = J[t] * eff_pJM
+        prom_MS = M[t] * eff_pMS
+        prom_SL = S[t] * eff_pSL
 
-        J[t] = J[t-1] + entry - prom_JM - attr_J
-        M[t] = M[t-1] + prom_JM - prom_MS - attr_M
-        S[t] = S[t-1] + prom_MS - prom_SL - attr_S
-        L[t] = L[t-1] + prom_SL - attr_L
+        attr_J = J[t] * aJ * g_stagnation
+        attr_M = M[t] * aM * g_stagnation
+        attr_S = S[t] * aS * g_stagnation
+        attr_L = L[t] * aL * g_stagnation
 
-        J[t] = max(J[t], 0)
-        M[t] = max(M[t], 0)
-        S[t] = max(S[t], 0)
-        L[t] = max(L[t], 0)
-
-    mentorship[-1] = alpha * (1 - np.exp(-kappa * (S[-1] + L[-1])))
+        J[t + 1] = max(J[t] + dt * (entry_per_year - prom_JM - attr_J), 0.0)
+        M[t + 1] = max(M[t] + dt * (prom_JM - prom_MS - attr_M), 0.0)
+        S[t + 1] = max(S[t] + dt * (prom_MS - prom_SL - attr_S), 0.0)
+        L[t + 1] = max(L[t] + dt * (prom_SL - attr_L), 0.0)
 
     df = pd.DataFrame({
-        "Time": time,
+        "Year": years,
         "Junior": J,
-        "Mid": M,
+        "Mid-level": M,
         "Senior": S,
-        "Leadership": L,
-        "Mentorship": mentorship
+        "Leadership": L
     })
 
-    total = df["Junior"] + df["Mid"] + df["Senior"] + df["Leadership"]
+    total = df["Junior"] + df["Mid-level"] + df["Senior"] + df["Leadership"]
     df["Leadership_share"] = 100 * df["Leadership"] / total
     df["Senior_Leadership_share"] = 100 * (df["Senior"] + df["Leadership"]) / total
 
@@ -109,25 +107,64 @@ def simulate(
 
 # Intervention scenarios
 scenarios = [
-    {"label": "Baseline", "alpha": 0.3, "bias": 0.15},
-    {"label": "Mentorship only", "alpha": 0.6, "bias": 0.15},
-    {"label": "Bias reduction only", "alpha": 0.3, "bias": 0.05},
-    {"label": "Combined", "alpha": 0.6, "bias": 0.05},
+    {
+        "label": "Baseline",
+        "alpha": 0.1,
+        "bias_JM": 0.15,
+        "bias_MS": 0.25,
+        "bias_SL": 0.35
+    },
+    {
+        "label": "Mentorship only",
+        "alpha": 0.6,
+        "bias_JM": 0.15,
+        "bias_MS": 0.25,
+        "bias_SL": 0.35
+    },
+    {
+        "label": "Bias reduction only",
+        "alpha": 0.1,
+        "bias_JM": 0.05,
+        "bias_MS": 0.10,
+        "bias_SL": 0.15
+    },
+    {
+        "label": "Combined",
+        "alpha": 0.6,
+        "bias_JM": 0.05,
+        "bias_MS": 0.10,
+        "bias_SL": 0.15
+    },
 ]
 
 labels = []
 leadership_share_year30 = []
+raw_rows = []
 
 for scenario in scenarios:
     df = simulate(
         alpha=scenario["alpha"],
-        bias_JM=scenario["bias"],
-        bias_MS=scenario["bias"],
-        bias_SL=scenario["bias"]
+        bias_JM=scenario["bias_JM"],
+        bias_MS=scenario["bias_MS"],
+        bias_SL=scenario["bias_SL"]
     )
 
+    final = df.iloc[-1]
+
     labels.append(scenario["label"])
-    leadership_share_year30.append(df["Leadership_share"].iloc[-1])
+    leadership_share_year30.append(final["Leadership_share"])
+
+    raw_rows.append({
+        "Scenario": scenario["label"],
+        "Junior": round(final["Junior"], 2),
+        "Mid-level": round(final["Mid-level"], 2),
+        "Senior": round(final["Senior"], 2),
+        "Leadership": round(final["Leadership"], 2),
+        "Total": round(
+            final["Junior"] + final["Mid-level"] + final["Senior"] + final["Leadership"],
+            2
+        )
+    })
 
 # Plot Figure 5.12
 fig, ax = plt.subplots(figsize=(9, 5.5))
@@ -137,8 +174,8 @@ bars = ax.bar(labels, leadership_share_year30)
 for bar, value in zip(bars, leadership_share_year30):
     ax.text(
         bar.get_x() + bar.get_width() / 2,
-        bar.get_height() + 0.5,
-        f"{value:.1f}%",
+        bar.get_height() + max(leadership_share_year30) * 0.02,
+        f"{value:.2f}%",
         ha="center",
         va="bottom",
         fontsize=11
@@ -146,41 +183,14 @@ for bar, value in zip(bars, leadership_share_year30):
 
 ax.set_title("Final Leadership Representation Under Intervention Scenarios")
 ax.set_xlabel("Intervention scenario")
-ax.set_ylabel("Leadership representation at year 30 (%)")
+ax.set_ylabel("Leadership share at year 30 (%)")
 ax.set_ylim(0, max(leadership_share_year30) * 1.2)
 
 plt.tight_layout()
 plt.savefig("figure_5_12_intervention_bar_chart.png", bbox_inches="tight")
 plt.show()
 
-# Print raw year-30 values for manual Table 5.5 calculations
-raw_rows = []
-
-for scenario in scenarios:
-    df = simulate(
-        alpha=scenario["alpha"],
-        bias_JM=scenario["bias"],
-        bias_MS=scenario["bias"],
-        bias_SL=scenario["bias"]
-    )
-
-    final_year = df.iloc[-1]
-
-    junior = final_year["Junior"]
-    mid = final_year["Mid"]
-    senior = final_year["Senior"]
-    leadership = final_year["Leadership"]
-    total = junior + mid + senior + leadership
-
-    raw_rows.append({
-        "Scenario": scenario["label"],
-        "Junior": round(junior, 2),
-        "Mid-level": round(mid, 2),
-        "Senior": round(senior, 2),
-        "Leadership": round(leadership, 2),
-        "Total": round(total, 2)
-    })
-
+# Print raw year-30 values
 raw_outputs = pd.DataFrame(raw_rows)
 
 pd.set_option("display.max_columns", None)
@@ -188,5 +198,3 @@ pd.set_option("display.width", 1000)
 
 print("\nRaw year 30 outputs for manual Table 5.5 calculations:\n")
 print(raw_outputs.to_string(index=False))
-
-raw_outputs.to_csv("table_5_5_raw_outputs.csv", index=False)
