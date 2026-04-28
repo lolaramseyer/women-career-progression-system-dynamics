@@ -9,9 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -----------------------------
 # Plot styling
-# -----------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -27,9 +25,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# -----------------------------
 # Core simulation model
-# -----------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -109,10 +105,7 @@ def simulate(
 
     return df
 
-# -----------------------------
-# Figure 5.5
-# Leadership at year 30 by mentorship level
-# -----------------------------
+# Figure 5.5 Leadership at year 30 by mentorship level
 alpha_values = [0.1, 0.3, 0.6, 0.9]
 labels = ["Low", "Moderate", "High", "Very high"]
 
@@ -122,9 +115,7 @@ for alpha in alpha_values:
     df = simulate(alpha=alpha)
     leadership_year30.append(df["Leadership"].iloc[-1])
 
-# -----------------------------
 # Plot bar chart
-# -----------------------------
 fig, ax = plt.subplots(figsize=(8, 5.5))
 bars = ax.bar(labels, leadership_year30)
 
@@ -146,9 +137,7 @@ ax.set_ylabel("Women in leadership at year 30")
 plt.tight_layout()
 plt.show()
 
-# -----------------------------
 # Print exact values and gains
-# -----------------------------
 results = pd.DataFrame({
     "Mentorship level": labels,
     "Alpha": alpha_values,
