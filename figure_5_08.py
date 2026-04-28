@@ -10,9 +10,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -----------------------------
+
 # Plot styling
-# -----------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -28,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# -----------------------------
 # Core simulation model
-# -----------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -98,10 +95,9 @@ def simulate(
 
     return df
 
-# -----------------------------
-# Figure 5.8
-# Leadership at year 30 by bias level
-# -----------------------------
+
+# Figure 5.8 Leadership at year 30 by bias level
+
 bias_values = [0.00, 0.10, 0.20, 0.30]
 labels = ["0%", "10%", "20%", "30%"]
 
@@ -116,9 +112,7 @@ for bias in bias_values:
     )
     leadership_year30.append(df["Leadership"].iloc[-1])
 
-# -----------------------------
 # Plot bar chart
-# -----------------------------
 fig, ax = plt.subplots(figsize=(8, 5.5))
 bars = ax.bar(labels, leadership_year30)
 
@@ -140,22 +134,19 @@ ax.set_ylabel("Women in leadership at year 30")
 plt.tight_layout()
 plt.show()
 
-# -----------------------------
+
 # Print exact values
-# -----------------------------
 results = pd.DataFrame({
     "Promotion bias level": labels,
     "Bias value": bias_values,
     "Leadership at year 30": leadership_year30
 })
 
-print(results)import numpy as np
+print(results)
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -----------------------------
 # Plot styling
-# -----------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -171,9 +162,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# -----------------------------
 # Core simulation model
-# -----------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -241,10 +230,7 @@ def simulate(
 
     return df
 
-# -----------------------------
-# Figure 5.8
-# Leadership at year 30 by bias level
-# -----------------------------
+# Figure 5.8 Leadership at year 30 by bias level
 bias_values = [0.00, 0.10, 0.20, 0.30]
 labels = ["0%", "10%", "20%", "30%"]
 
@@ -259,9 +245,7 @@ for bias in bias_values:
     )
     leadership_year30.append(df["Leadership"].iloc[-1])
 
-# -----------------------------
 # Plot bar chart
-# -----------------------------
 fig, ax = plt.subplots(figsize=(8, 5.5))
 bars = ax.bar(labels, leadership_year30)
 
@@ -283,9 +267,7 @@ ax.set_ylabel("Women in leadership at year 30")
 plt.tight_layout()
 plt.show()
 
-# -----------------------------
 # Print exact values
-# -----------------------------
 results = pd.DataFrame({
     "Promotion bias level": labels,
     "Bias value": bias_values,
