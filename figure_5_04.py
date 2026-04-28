@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -29,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -112,9 +108,7 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Mentorship sensitivity analysis
-# ---------------------------------
 alpha_values = [0.1, 0.3, 0.6, 0.9]
 results = {}
 
@@ -133,9 +127,7 @@ for alpha in alpha_values:
         kappa=0.002
     )
 
-# ---------------------------------
 # Plot Figure 5.4
-# ---------------------------------
 fig, ax = plt.subplots()
 
 for alpha, df in results.items():
