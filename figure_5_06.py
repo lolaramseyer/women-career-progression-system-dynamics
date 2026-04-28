@@ -30,27 +30,13 @@ plt.rcParams.update({
 def simulate(
     T=30,
     dt=1.0,
-
-    # Initial stocks
     J0=2000, M0=800, S0=250, L0=80,
-
-    # Entry flow
     entry_per_year=300,
-
-    # Base promotion rates
     pJM=0.12, pMS=0.10, pSL=0.08,
-
-    # Attrition rates
     aJ=0.08, aM=0.06, aS=0.05, aL=0.04,
-
-    # Mentorship strength
     alpha=0.3,
-    kappa=400.0,
-
-    # Promotion bias
-    bias_JM=0.15,
-    bias_MS=0.15,
-    bias_SL=0.15
+    bias_JM=0.15, bias_MS=0.15, bias_SL=0.15,
+    kappa=0.002
 ):
     n_steps = int(T / dt) + 1
     time = np.arange(0, T + dt, dt)
@@ -64,26 +50,35 @@ def simulate(
     J[0], M[0], S[0], L[0] = J0, M0, S0, L0
 
     for t in range(1, n_steps):
-        # Mentorship availability depends on senior + leadership presence
-        upper_levels = S[t-1] + L[t-1]
-        mentorship[t-1] = alpha * (upper_levels / (upper_levels + kappa))
+        # Mentorship availability
+        mentorship[t-1] = alpha * (1 - np.exp(-kappa * (S[t-1] + L[t-1])))
 
-        # Promotion flows
-        promote_JM = pJM * (1 - bias_JM) * (1 + mentorship[t-1]) * J[t-1]
-        promote_MS = pMS * (1 - bias_MS) * (1 + mentorship[t-1]) * M[t-1]
-        promote_SL = pSL * (1 - bias_SL) * (1 + mentorship[t-1]) * S[t-1]
+        # Effective promotion rates
+        eff_pJM = pJM * (1 - bias_JM) * (1 + mentorship[t-1])
+        eff_pMS = pMS * (1 - bias_MS) * (1 + mentorship[t-1])
+        eff_pSL = pSL * (1 - bias_SL) * (1 + mentorship[t-1])
 
-        # Attrition flows
-        attrit_J = aJ * J[t-1]
-        attrit_M = aM * M[t-1]
-        attrit_S = aS * S[t-1]
-        attrit_L = aL * L[t-1]
+        eff_pJM = min(eff_pJM, 1.0)
+        eff_pMS = min(eff_pMS, 1.0)
+        eff_pSL = min(eff_pSL, 1.0)
+
+        # Flows
+        entry = entry_per_year * dt
+
+        prom_JM = eff_pJM * J[t-1] * dt
+        prom_MS = eff_pMS * M[t-1] * dt
+        prom_SL = eff_pSL * S[t-1] * dt
+
+        attr_J = aJ * J[t-1] * dt
+        attr_M = aM * M[t-1] * dt
+        attr_S = aS * S[t-1] * dt
+        attr_L = aL * L[t-1] * dt
 
         # Stock updates
-        J[t] = J[t-1] + (entry_per_year - promote_JM - attrit_J) * dt
-        M[t] = M[t-1] + (promote_JM - promote_MS - attrit_M) * dt
-        S[t] = S[t-1] + (promote_MS - promote_SL - attrit_S) * dt
-        L[t] = L[t-1] + (promote_SL - attrit_L) * dt
+        J[t] = J[t-1] + entry - prom_JM - attr_J
+        M[t] = M[t-1] + prom_JM - prom_MS - attr_M
+        S[t] = S[t-1] + prom_MS - prom_SL - attr_S
+        L[t] = L[t-1] + prom_SL - attr_L
 
         # Prevent negatives
         J[t] = max(J[t], 0)
@@ -91,9 +86,7 @@ def simulate(
         S[t] = max(S[t], 0)
         L[t] = max(L[t], 0)
 
-    # Final mentorship value
-    upper_levels = S[-1] + L[-1]
-    mentorship[-1] = alpha * (upper_levels / (upper_levels + kappa))
+    mentorship[-1] = alpha * (1 - np.exp(-kappa * (S[-1] + L[-1])))
 
     df = pd.DataFrame({
         "Year": time,
@@ -108,20 +101,40 @@ def simulate(
 
 # Figure 5.6 Mentorship availability over time
 alpha_values = [0.1, 0.3, 0.6, 0.9]
-labels = ["Low (α = 0.1)", "Moderate (α = 0.3)", "High (α = 0.6)", "Very High (α = 0.9)"]
+labels = [
+    "Low (α = 0.1)",
+    "Moderate (α = 0.3)",
+    "High (α = 0.6)",
+    "Very high (α = 0.9)"
+]
 
-fig, ax = plt.subplots(figsize=(9, 5.5))
+fig, ax = plt.subplots()
+
+summary_rows = []
 
 for alpha, label in zip(alpha_values, labels):
     df = simulate(alpha=alpha)
     ax.plot(df["Year"], df["Mentorship"], label=label)
 
-ax.set_title("Mentorship Availability Over Time under Different Mentorship Strenght Scenarios")
+    summary_rows.append({
+        "Mentorship level": label,
+        "Mentorship at year 0": round(df["Mentorship"].iloc[0], 4),
+        "Mentorship at year 30": round(df["Mentorship"].iloc[-1], 4)
+    })
+
+ax.set_title("Mentorship Availability Over Time under Different Mentorship Strength Scenarios")
 ax.set_xlabel("Year")
-ax.set_ylabel("Mentorship availability index ")
+ax.set_ylabel("Mentorship availability index")
 ax.set_xlim(0, 30)
 ax.set_ylim(bottom=0)
 ax.legend(frameon=False)
 
 plt.tight_layout()
+plt.savefig("figure_5_6_mentorship_availability_over_time.png", bbox_inches="tight")
 plt.show()
+
+# Print simple check values
+summary_df = pd.DataFrame(summary_rows)
+
+print("\nFigure 5.6 mentorship values:\n")
+print(summary_df.to_string(index=False))
