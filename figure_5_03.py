@@ -48,7 +48,7 @@ ax.set_ylabel("Number of women")
 ax.set_title("Workforce distribution by level over time under baseline conditions", pad=12)
 
 ax.set_xlim(0, T)
-ax.grid(True, linestyle="--", alpha=0.35)
+ax.grid(True, linestyle="--", alpha=0.3)
 
 ax.legend(frameon=False)
 
