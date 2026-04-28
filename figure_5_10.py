@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -29,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -102,14 +98,10 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Baseline scenario
-# ---------------------------------
 baseline = simulate(alpha=0.3, bias_JM=0.15, bias_MS=0.15, bias_SL=0.15)
 
-# ---------------------------------
 # Selected scenario comparison
-# ---------------------------------
 scenarios = [
     {"label": "Low mentorship + 30% bias", "alpha": 0.1, "bias": 0.30},
     {"label": "Moderate mentorship + 10% bias", "alpha": 0.3, "bias": 0.15},
