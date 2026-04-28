@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -----------------------------
 # Plot styling
-# -----------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -29,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# -----------------------------
 # Core simulation model
-# -----------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -111,10 +107,7 @@ def simulate(
 
     return df
 
-# -----------------------------
-# Figure 5.6
-# Mentorship availability over time
-# -----------------------------
+# Figure 5.6 Mentorship availability over time
 alpha_values = [0.1, 0.3, 0.6, 0.9]
 labels = ["Low (α = 0.1)", "Moderate (α = 0.3)", "High (α = 0.6)", "Very High (α = 0.9)"]
 
