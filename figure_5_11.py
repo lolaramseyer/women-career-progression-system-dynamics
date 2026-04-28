@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------------------------
 # Plot styling
-# ---------------------------------
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -29,9 +27,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# ---------------------------------
 # Core simulation model
-# ---------------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -103,9 +99,7 @@ def simulate(
 
     return df
 
-# ---------------------------------
 # Intervention scenarios
-# ---------------------------------
 scenarios = [
     {"label": "Baseline", "alpha": 0.3, "bias": 0.15},
     {"label": "Mentorship enhancement only", "alpha": 0.6, "bias": 0.15},
@@ -113,9 +107,7 @@ scenarios = [
     {"label": "Combined intervention", "alpha": 0.6, "bias": 0.05},
 ]
 
-# ---------------------------------
 # Plot Figure 5.12
-# ---------------------------------
 fig, ax = plt.subplots()
 
 for scenario in scenarios:
@@ -137,9 +129,7 @@ plt.tight_layout()
 plt.savefig("figure_5_12_intervention_comparison.png", bbox_inches="tight")
 plt.show()
 
-# ---------------------------------
 # Print year-30 summary
-# ---------------------------------
 rows = []
 for scenario in scenarios:
     df = simulate(
