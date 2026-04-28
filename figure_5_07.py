@@ -26,7 +26,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# Core simulation model Same as corrected baseline
+# Core simulation model same as corrected baseline
 def simulate(
     T=30,
     dt=1.0,
