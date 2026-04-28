@@ -20,7 +20,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# Core simulation model
+# Core simulation model same corrected model as previous figures
 def simulate(
     T=30,
     dt=1.0,
@@ -29,105 +29,98 @@ def simulate(
     S0=250,
     L0=80,
     entry_per_year=300,
-    pJM=0.12,
-    pMS=0.10,
-    pSL=0.08,
+
+    pJM=0.10,
+    pMS=0.045,
+    pSL=0.020,
+
     aJ=0.08,
     aM=0.06,
     aS=0.05,
     aL=0.04,
-    alpha=0.3,
-    bias=0.15,
-    kappa=0.002
+
+    alpha=0.1,
+    mentor_scale=3000,
+
+    bias_JM=0.15,
+    bias_MS=0.25,
+    bias_SL=0.35,
+
+    use_stagnation=True,
+    gamma=0.4,
+    cap_effective_promo=True
 ):
-    """
-    Simulates women's movement through four career stocks:
-    Junior, Mid-level, Senior and Leadership.
-    """
+    steps = int(T / dt)
+    years = np.arange(0, T + dt, dt)
 
-    n_steps = int(T / dt) + 1
-    time = np.arange(0, T + dt, dt)
+    J = np.zeros(steps + 1)
+    M = np.zeros(steps + 1)
+    S = np.zeros(steps + 1)
+    L = np.zeros(steps + 1)
+    mentorship = np.zeros(steps + 1)
 
-    J = np.zeros(n_steps)
-    M = np.zeros(n_steps)
-    S = np.zeros(n_steps)
-    L = np.zeros(n_steps)
-    mentorship = np.zeros(n_steps)
+    J[0], M[0], S[0], L[0] = J0, M0, S0, L0
 
-    J[0] = J0
-    M[0] = M0
-    S[0] = S0
-    L[0] = L0
+    for t in range(steps):
 
-    for t in range(1, n_steps):
+        mentorship[t] = 1.0 - np.exp(-(S[t] + L[t]) / mentor_scale)
+        mentorship[t] = np.clip(mentorship[t], 0.0, 1.0)
 
-        # Mentorship availability depends on senior + leadership representation
-        mentorship[t - 1] = alpha * (1 - np.exp(-kappa * (S[t - 1] + L[t - 1])))
+        f_mentorship = 1.0 + alpha * mentorship[t]
 
-        # Effective promotion rates after mentorship and promotion bias
-        eff_pJM = pJM * (1 - bias) * (1 + mentorship[t - 1])
-        eff_pMS = pMS * (1 - bias) * (1 + mentorship[t - 1])
-        eff_pSL = pSL * (1 - bias) * (1 + mentorship[t - 1])
+        if use_stagnation:
+            g_stagnation = 1.0 + gamma * (1.0 - mentorship[t])
+        else:
+            g_stagnation = 1.0
 
-        # Cap promotion rates at 1
-        eff_pJM = min(eff_pJM, 1.0)
-        eff_pMS = min(eff_pMS, 1.0)
-        eff_pSL = min(eff_pSL, 1.0)
+        eff_pJM = pJM * f_mentorship * (1 - bias_JM)
+        eff_pMS = pMS * f_mentorship * (1 - bias_MS)
+        eff_pSL = pSL * f_mentorship * (1 - bias_SL)
 
-        # Promotion flows
-        prom_JM = eff_pJM * J[t - 1] * dt
-        prom_MS = eff_pMS * M[t - 1] * dt
-        prom_SL = eff_pSL * S[t - 1] * dt
+        if cap_effective_promo:
+            eff_pJM = np.clip(eff_pJM, 0.0, 1.0)
+            eff_pMS = np.clip(eff_pMS, 0.0, 1.0)
+            eff_pSL = np.clip(eff_pSL, 0.0, 1.0)
 
-        # Attrition flows
-        attr_J = aJ * J[t - 1] * dt
-        attr_M = aM * M[t - 1] * dt
-        attr_S = aS * S[t - 1] * dt
-        attr_L = aL * L[t - 1] * dt
+        prom_JM = J[t] * eff_pJM
+        prom_MS = M[t] * eff_pMS
+        prom_SL = S[t] * eff_pSL
 
-        # Entry flow
-        entry = entry_per_year * dt
+        attr_J = J[t] * aJ * g_stagnation
+        attr_M = M[t] * aM * g_stagnation
+        attr_S = S[t] * aS * g_stagnation
+        attr_L = L[t] * aL * g_stagnation
 
-        # Stock updates
-        J[t] = J[t - 1] + entry - prom_JM - attr_J
-        M[t] = M[t - 1] + prom_JM - prom_MS - attr_M
-        S[t] = S[t - 1] + prom_MS - prom_SL - attr_S
-        L[t] = L[t - 1] + prom_SL - attr_L
+        J[t + 1] = max(J[t] + dt * (entry_per_year - prom_JM - attr_J), 0.0)
+        M[t + 1] = max(M[t] + dt * (prom_JM - prom_MS - attr_M), 0.0)
+        S[t + 1] = max(S[t] + dt * (prom_MS - prom_SL - attr_S), 0.0)
+        L[t + 1] = max(L[t] + dt * (prom_SL - attr_L), 0.0)
 
-        # Prevent negative stock values
-        J[t] = max(J[t], 0)
-        M[t] = max(M[t], 0)
-        S[t] = max(S[t], 0)
-        L[t] = max(L[t], 0)
-
-    # Final mentorship value
-    mentorship[-1] = alpha * (1 - np.exp(-kappa * (S[-1] + L[-1])))
-
-    results = pd.DataFrame({
-        "Time": time,
+    df = pd.DataFrame({
+        "Year": years,
         "Junior": J,
-        "Mid": M,
+        "Mid-level": M,
         "Senior": S,
-        "Leadership": L,
-        "Mentorship": mentorship
+        "Leadership": L
     })
 
-    return results
+    return df
 
-# Function to get year 30 summary values
+# Function to get year 30 values
 def get_year30_values(alpha, bias):
-    """
-    Runs one scenario and returns raw stocks and calculated shares at year 30.
-    """
+    df = simulate(
+        alpha=alpha,
+        bias_JM=bias,
+        bias_MS=bias,
+        bias_SL=bias
+    )
 
-    df = simulate(alpha=alpha, bias=bias)
     final = df.iloc[-1]
 
     junior = final["Junior"]
-    mid = final["Mid"]
+    mid = final["Mid-level"]
     senior = final["Senior"]
     leadership = final["Leadership"]
-
     total = junior + mid + senior + leadership
 
     leadership_share = leadership / total * 100
@@ -143,14 +136,13 @@ def get_year30_values(alpha, bias):
         "Senior + Leadership share (%)": senior_leadership_share
     }
 
-# Settings for Figure 5.9 heatmap
+# Heatmap settings
 alpha_values = [0.1, 0.3, 0.6, 0.9]
 bias_values = [0.0, 0.1, 0.2, 0.3]
 
 alpha_labels = ["0.1", "0.3", "0.6", "0.9"]
 bias_labels = ["0%", "10%", "20%", "30%"]
 
-# Build heatmap values
 heatmap_data = np.zeros((len(bias_values), len(alpha_values)))
 
 for i, bias in enumerate(bias_values):
@@ -158,7 +150,7 @@ for i, bias in enumerate(bias_values):
         values = get_year30_values(alpha, bias)
         heatmap_data[i, j] = values["Leadership share (%)"]
 
-# Plot Figure 5.9 heatmap
+# Plot Figure 5.9
 fig, ax = plt.subplots(figsize=(8.5, 6))
 
 im = ax.imshow(heatmap_data, cmap="Blues", aspect="auto")
@@ -176,13 +168,12 @@ ax.set_title(
     "on Leadership Representation at Year 30"
 )
 
-# Add numbers inside heatmap cells
 for i in range(len(bias_values)):
     for j in range(len(alpha_values)):
         ax.text(
             j,
             i,
-            f"{heatmap_data[i, j]:.1f}",
+            f"{heatmap_data[i, j]:.2f}",
             ha="center",
             va="center",
             color="black",
@@ -206,7 +197,7 @@ heatmap_table = pd.DataFrame(
 print("\nLeadership share at year 30 (%) for Figure 5.9:\n")
 print(heatmap_table.round(2).to_string())
 
-# Raw outputs for Table 5.4
+# Raw outputs for manual Table 5.4 calculations
 selected_scenarios = [
     ("Low (α = 0.1)", 0.1, 0.0),
     ("Low (α = 0.1)", 0.1, 0.1),
@@ -224,7 +215,6 @@ selected_scenarios = [
 raw_rows = []
 
 for label, alpha, bias in selected_scenarios:
-
     values = get_year30_values(alpha, bias)
 
     raw_rows.append({
@@ -237,7 +227,6 @@ for label, alpha, bias in selected_scenarios:
         "Total": round(values["Total"], 2)
     })
 
-
 raw_outputs = pd.DataFrame(raw_rows)
 
 pd.set_option("display.max_columns", None)
@@ -246,4 +235,4 @@ pd.set_option("display.width", 1000)
 print("\nRaw year 30 outputs for manual Table 5.4 calculations:\n")
 print(raw_outputs.to_string(index=False))
 
-raw_outputs.to_csv("table_5_4_raw_outputs.csv", index=False)
+raw_outputs.to_csv("table_5_4_raw_outputs.csv", index=False)v", index=False)
