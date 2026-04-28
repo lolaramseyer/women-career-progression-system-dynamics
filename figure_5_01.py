@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# --- Plot styling ---
+#Plot styling 
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -28,9 +28,7 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# -----------------------------
 # Core simulation model
-# -----------------------------
 def simulate(
     T=30,
     dt=1.0,
@@ -129,9 +127,7 @@ def simulate(
 
     return df
 
-# -----------------------------
 # Run baseline
-# -----------------------------
 baseline = simulate(
     T=30,
     dt=1,
@@ -149,10 +145,7 @@ baseline = simulate(
     cap_effective_promo=True
 )
 
-# -----------------------------
-# Figure 5.1
-# Women in Senior + Leadership over time (baseline)
-# -----------------------------
+# Figure 5.1 Women in Senior + Leadership over time (baseline)
 plt.figure()
 plt.plot(baseline["year"], baseline["SplusL_Share"], label="Baseline")
 plt.xlabel("Year")
