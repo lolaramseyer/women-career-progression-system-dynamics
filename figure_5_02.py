@@ -10,9 +10,7 @@ Created on Tue Mar 10 11:18:15 2026
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -----------------------------
-# Example baseline simulation
-# -----------------------------
+# baseline simulation
 T = 30                  # years
 dt = 1.0
 time = np.arange(0, T + dt, dt)
@@ -22,11 +20,8 @@ time = np.arange(0, T + dt, dt)
 senior = 250 + 8*time + 0.15*(time**2)
 leadership = 80 + 2*time + 0.05*(time**2)
 
-# -----------------------------
-# Mentorship function
-# -----------------------------
-# Example saturating mentorship relationship
-# alpha = mentorship scaling parameter
+
+# Mentorship function alpha = mentorship scaling parameter
 alpha = 0.3
 
 # total senior representation feeding mentorship capacity
@@ -35,9 +30,7 @@ senior_pool = senior + leadership
 # mentorship availability (saturating function)
 mentorship = 1 - np.exp(-alpha * senior_pool / 1000)
 
-# -----------------------------
 # Plot: Figure 5.2
-# -----------------------------
 plt.figure(figsize=(9, 5.5))
 plt.plot(time, mentorship, linewidth=2.5, label="Mentorship availability")
 
