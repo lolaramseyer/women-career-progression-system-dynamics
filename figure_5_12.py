@@ -153,10 +153,40 @@ plt.tight_layout()
 plt.savefig("figure_5_12_intervention_bar_chart.png", bbox_inches="tight")
 plt.show()
 
-# Print exact values
-results = pd.DataFrame({
-    "Scenario": labels,
-    "Leadership representation at year 30 (%)": leadership_share_year30
-})
+# Print raw year-30 values for manual Table 5.5 calculations
+raw_rows = []
 
-print(results.round(2))
+for scenario in scenarios:
+    df = simulate(
+        alpha=scenario["alpha"],
+        bias_JM=scenario["bias"],
+        bias_MS=scenario["bias"],
+        bias_SL=scenario["bias"]
+    )
+
+    final_year = df.iloc[-1]
+
+    junior = final_year["Junior"]
+    mid = final_year["Mid"]
+    senior = final_year["Senior"]
+    leadership = final_year["Leadership"]
+    total = junior + mid + senior + leadership
+
+    raw_rows.append({
+        "Scenario": scenario["label"],
+        "Junior": round(junior, 2),
+        "Mid-level": round(mid, 2),
+        "Senior": round(senior, 2),
+        "Leadership": round(leadership, 2),
+        "Total": round(total, 2)
+    })
+
+raw_outputs = pd.DataFrame(raw_rows)
+
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", 1000)
+
+print("\nRaw year 30 outputs for manual Table 5.5 calculations:\n")
+print(raw_outputs.to_string(index=False))
+
+raw_outputs.to_csv("table_5_5_raw_outputs.csv", index=False)
