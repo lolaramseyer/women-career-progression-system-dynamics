@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Plot styling
 plt.rcParams.update({
     "figure.dpi": 150,
     "savefig.dpi": 600,
@@ -25,7 +24,6 @@ plt.rcParams.update({
     "axes.spines.right": False,
 })
 
-# Core simulation model
 def simulate(
     T=30,
     dt=1.0,
@@ -34,132 +32,121 @@ def simulate(
     S0=250,
     L0=80,
     entry_per_year=300,
-    pJM=0.12,
-    pMS=0.10,
-    pSL=0.08,
+    pJM=0.10,
+    pMS=0.045,
+    pSL=0.020,
     aJ=0.08,
     aM=0.06,
     aS=0.05,
     aL=0.04,
-    alpha=0.3,
+    alpha=0.1,
+    mentor_scale=3000,
     bias_JM=0.15,
-    bias_MS=0.15,
-    bias_SL=0.15,
-    kappa=0.002
+    bias_MS=0.25,
+    bias_SL=0.35,
+    use_stagnation=True,
+    gamma=0.4,
+    cap_effective_promo=True
 ):
-    n_steps = int(T / dt) + 1
-    time = np.arange(0, T + dt, dt)
+    steps = int(T / dt)
+    years = np.arange(0, T + dt, dt)
 
-    J = np.zeros(n_steps)
-    M = np.zeros(n_steps)
-    S = np.zeros(n_steps)
-    L = np.zeros(n_steps)
-    mentorship = np.zeros(n_steps)
+    J = np.zeros(steps + 1)
+    M = np.zeros(steps + 1)
+    S = np.zeros(steps + 1)
+    L = np.zeros(steps + 1)
+    mentorship = np.zeros(steps + 1)
 
     J[0], M[0], S[0], L[0] = J0, M0, S0, L0
 
-    for t in range(1, n_steps):
-        # Mentorship availability
-        mentorship[t - 1] = alpha * (1 - np.exp(-kappa * (S[t - 1] + L[t - 1])))
+    for t in range(steps):
+        mentorship[t] = 1.0 - np.exp(-(S[t] + L[t]) / mentor_scale)
+        mentorship[t] = np.clip(mentorship[t], 0.0, 1.0)
 
-        # Effective promotion rates after mentorship and bias
-        eff_pJM = pJM * (1 - bias_JM) * (1 + mentorship[t - 1])
-        eff_pMS = pMS * (1 - bias_MS) * (1 + mentorship[t - 1])
-        eff_pSL = pSL * (1 - bias_SL) * (1 + mentorship[t - 1])
+        f_mentorship = 1.0 + alpha * mentorship[t]
 
-        # Keep rates within sensible bounds
-        eff_pJM = min(eff_pJM, 1.0)
-        eff_pMS = min(eff_pMS, 1.0)
-        eff_pSL = min(eff_pSL, 1.0)
+        if use_stagnation:
+            g_stagnation = 1.0 + gamma * (1.0 - mentorship[t])
+        else:
+            g_stagnation = 1.0
 
-        # Flows
-        entry = entry_per_year * dt
+        eff_pJM = pJM * f_mentorship * (1 - bias_JM)
+        eff_pMS = pMS * f_mentorship * (1 - bias_MS)
+        eff_pSL = pSL * f_mentorship * (1 - bias_SL)
 
-        prom_JM = eff_pJM * J[t - 1] * dt
-        prom_MS = eff_pMS * M[t - 1] * dt
-        prom_SL = eff_pSL * S[t - 1] * dt
+        if cap_effective_promo:
+            eff_pJM = np.clip(eff_pJM, 0.0, 1.0)
+            eff_pMS = np.clip(eff_pMS, 0.0, 1.0)
+            eff_pSL = np.clip(eff_pSL, 0.0, 1.0)
 
-        attr_J = aJ * J[t - 1] * dt
-        attr_M = aM * M[t - 1] * dt
-        attr_S = aS * S[t - 1] * dt
-        attr_L = aL * L[t - 1] * dt
+        prom_JM = J[t] * eff_pJM
+        prom_MS = M[t] * eff_pMS
+        prom_SL = S[t] * eff_pSL
 
-        # Stock updates
-        J[t] = J[t - 1] + entry - prom_JM - attr_J
-        M[t] = M[t - 1] + prom_JM - prom_MS - attr_M
-        S[t] = S[t - 1] + prom_MS - prom_SL - attr_S
-        L[t] = L[t - 1] + prom_SL - attr_L
+        attr_J = J[t] * aJ * g_stagnation
+        attr_M = M[t] * aM * g_stagnation
+        attr_S = S[t] * aS * g_stagnation
+        attr_L = L[t] * aL * g_stagnation
 
-        # Prevent negative values
-        J[t] = max(J[t], 0)
-        M[t] = max(M[t], 0)
-        S[t] = max(S[t], 0)
-        L[t] = max(L[t], 0)
+        J[t + 1] = max(J[t] + dt * (entry_per_year - prom_JM - attr_J), 0.0)
+        M[t + 1] = max(M[t] + dt * (prom_JM - prom_MS - attr_M), 0.0)
+        S[t + 1] = max(S[t] + dt * (prom_MS - prom_SL - attr_S), 0.0)
+        L[t + 1] = max(L[t] + dt * (prom_SL - attr_L), 0.0)
 
-    # Final mentorship value
-    mentorship[-1] = alpha * (1 - np.exp(-kappa * (S[-1] + L[-1])))
+    mentorship[steps] = 1.0 - np.exp(-(S[steps] + L[steps]) / mentor_scale)
 
     df = pd.DataFrame({
-        "Time": time,
+        "Year": years,
         "Junior": J,
-        "Mid": M,
+        "Mid-level": M,
         "Senior": S,
         "Leadership": L,
-        "Mentorship": mentorship
+        "MentorshipAvailability": mentorship
     })
 
     return df
 
-# Bias sensitivity settings
+
 bias_values = [0.00, 0.10, 0.20, 0.30]
 labels = ["0%", "10%", "20%", "30%"]
 
-raw_rows = []
 leadership_year30 = []
+raw_rows = []
 
-# Run model for each bias level
 for label, bias in zip(labels, bias_values):
     df = simulate(
-        alpha=0.3,          # hold mentorship constant
         bias_JM=bias,
         bias_MS=bias,
         bias_SL=bias
     )
 
-    final_year = df.iloc[-1]
+    final = df.iloc[-1]
 
-    junior_stock = final_year["Junior"]
-    mid_stock = final_year["Mid"]
-    senior_stock = final_year["Senior"]
-    leadership_stock = final_year["Leadership"]
+    junior = final["Junior"]
+    mid = final["Mid-level"]
+    senior = final["Senior"]
+    leadership = final["Leadership"]
+    total = junior + mid + senior + leadership
 
-    leadership_year30.append(leadership_stock)
+    leadership_year30.append(leadership)
 
     raw_rows.append({
         "Promotion bias level": label,
-        "Junior stock at year 30": round(junior_stock, 2),
-        "Mid-level stock at year 30": round(mid_stock, 2),
-        "Senior stock at year 30": round(senior_stock, 2),
-        "Leadership stock at year 30": round(leadership_stock, 2),
+        "Junior stock at year 30": round(junior, 2),
+        "Mid-level stock at year 30": round(mid, 2),
+        "Senior stock at year 30": round(senior, 2),
+        "Leadership stock at year 30": round(leadership, 2),
+        "Total stock at year 30": round(total, 2)
     })
 
 raw_outputs = pd.DataFrame(raw_rows)
 
-# Print raw model outputs only
-pd.set_option("display.max_columns", None)
-pd.set_option("display.width", 1000)
-
 print("\nRaw year 30 stock outputs for manual Table 5.3 calculations:\n")
 print(raw_outputs.to_string(index=False))
 
-# Optional: save raw outputs to CSV
-raw_outputs.to_csv("figure_5_8_raw_year30_outputs.csv", index=False)
-
-# Plot Figure 5.8
 fig, ax = plt.subplots(figsize=(8, 5.5))
 bars = ax.bar(labels, leadership_year30)
 
-# Add value labels to bars
 for bar, value in zip(bars, leadership_year30):
     ax.text(
         bar.get_x() + bar.get_width() / 2,
