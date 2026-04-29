@@ -173,13 +173,13 @@ rows = []
 for scenario in scenarios:
     df = simulate(
         alpha=scenario["alpha"],
-        bias_JM=scenario["bias"],
-        bias_MS=scenario["bias"],
-        bias_SL=scenario["bias"]
+        bias_JM=scenario["bias_JM"],
+        bias_MS=scenario["bias_MS"],
+        bias_SL=scenario["bias_SL"]
     )
 
     J = df["Junior"].iloc[-1]
-    M = df["Mid"].iloc[-1]
+    M = df["Mid-level"].iloc[-1]
     S = df["Senior"].iloc[-1]
     L = df["Leadership"].iloc[-1]
     total = J + M + S + L
@@ -190,6 +190,8 @@ for scenario in scenarios:
         "Mid-level stock at year 30": round(M, 2),
         "Senior stock at year 30": round(S, 2),
         "Leadership stock at year 30": round(L, 2),
+        "Leadership share at year 30 (%)": round(df["Leadership_share"].iloc[-1], 2),
+        "Senior + Leadership share at year 30 (%)": round(df["Senior_Leadership_share"].iloc[-1], 2),
         "Total stock at year 30": round(total, 2)
     })
 
