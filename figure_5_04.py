@@ -170,9 +170,23 @@ plt.tight_layout()
 plt.savefig("figure_5_4_mentorship_sensitivity.png", bbox_inches="tight")
 plt.show()
 
-# Print only core year-30 values for checking
-print("\nFigure 5.4 year-30 senior + leadership share values:\n")
+# Print raw year-30 stock values
+print("\nRaw year-30 stock outputs for Figure 5.4:\n")
+
+rows = []
 
 for alpha, df in results.items():
     final = df.iloc[-1]
-    print(f"alpha = {alpha}: {final['Senior_Leadership_share']:.2f}%")
+
+    rows.append({
+        "Mentorship level alpha": alpha,
+        "Junior stock at year 30": round(final["Junior"], 2),
+        "Mid-level stock at year 30": round(final["Mid-level"], 2),
+        "Senior stock at year 30": round(final["Senior"], 2),
+        "Leadership stock at year 30": round(final["Leadership"], 2),
+        "Total stock at year 30": round(final["Total"], 2)
+    })
+
+raw_results = pd.DataFrame(rows)
+print(raw_results)
+    
